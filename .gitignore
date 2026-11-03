@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 
 .terraform/
+terraform/plan.tfplan
 *.tfstate
 *.tfstate.*
 *.tfvars
