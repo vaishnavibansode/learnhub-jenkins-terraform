@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -17,9 +18,7 @@ pipeline {
             steps {
                 sh '''
                     python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    ./venv/bin/pip install -r requirements.txt
                 '''
             }
         }
@@ -27,13 +26,13 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    . venv/bin/activate
-                    pytest -v
+                    ./venv/bin/pip install pytest
+                    ./venv/bin/pytest -v
                 '''
             }
         }
 
-                stage('Deploy') {
+        stage('Deploy') {
             steps {
                 sh '''
                     set -e
@@ -54,39 +53,8 @@ pipeline {
                     sudo systemctl restart learnhub
 
                     for i in $(seq 1 10); do
-                        if curl -fsS http://127.0.0.1:$APP_PORT/health; then
+                        if curl -fsS "http://127.0.0.1:$APP_PORT/health"; then
                             echo "LearnHub deployment successful."
-                            exit 0
-                        fi
-                        sleep 2
-                    done
-
-                    echo "Application health check failed"
-                    exit 1
-                '''
-            }
-        }
-[Unit]
-Description=LearnHub Flask Application
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=$APP_DIR
-ExecStart=$APP_DIR/venv/bin/gunicorn --bind 0.0.0.0:$APP_PORT app:app
-Restart=on-failure
-User=ubuntu
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-
-                    sudo systemctl daemon-reload
-                    sudo systemctl enable learnhub
-                    sudo systemctl restart learnhub
-
-                    for i in $(seq 1 10); do
-                        if curl -fsS http://127.0.0.1:$APP_PORT/health; then
                             exit 0
                         fi
                         sleep 2
@@ -108,3 +76,4 @@ SERVICE
         }
     }
 }
+
