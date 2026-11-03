@@ -33,16 +33,39 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+                stage('Deploy') {
             steps {
                 sh '''
-                    sudo mkdir -p "$APP_DIR"
-                    sudo cp -r app "$APP_DIR/"
-                    sudo cp requirements.txt "$APP_DIR/"
-                    sudo python3 -m venv "$APP_DIR/venv"
-                    sudo "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/requirements.txt"
+                    set -e
 
-                    sudo tee /etc/systemd/system/learnhub.service > /dev/null <<SERVICE
+                    echo "Deploying LearnHub..."
+
+                    mkdir -p "$APP_DIR"
+
+                    rm -rf "$APP_DIR/app"
+                    cp -r app "$APP_DIR/"
+                    cp requirements.txt "$APP_DIR/"
+
+                    python3 -m venv "$APP_DIR/venv"
+                    "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/requirements.txt"
+
+                    sudo systemctl daemon-reload
+                    sudo systemctl enable learnhub
+                    sudo systemctl restart learnhub
+
+                    for i in $(seq 1 10); do
+                        if curl -fsS http://127.0.0.1:$APP_PORT/health; then
+                            echo "LearnHub deployment successful."
+                            exit 0
+                        fi
+                        sleep 2
+                    done
+
+                    echo "Application health check failed"
+                    exit 1
+                '''
+            }
+        }
 [Unit]
 Description=LearnHub Flask Application
 After=network.target
